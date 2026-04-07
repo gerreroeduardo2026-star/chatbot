@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EVE IA — Práctica Docente IV</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+ 
+<style>
+:root {
+  --cyan: #00e5ff;
+  --blue: #0057ff;
+  --dark: #000d1a;
+  --glass: rgba(0, 229, 255, 0.06);
+  --glass-border: rgba(0, 229, 255, 0.18);
+  --text-dim: rgba(0, 229, 255, 0.55);
+}
+ 
+* { margin: 0; padding: 0; box-sizing: border-box; }
+ 
+body {
+  background: var(--dark);
+  font-family: 'Exo 2', sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  overflow: hidden;
+}
+ 
+/* ── BACKGROUND ── */
+canvas#bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+ 
+.grid-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background-image:
+    linear-gradient(rgba(0,229,255,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,0.035) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+ 
+/* ── MAIN SHELL ── */
+.shell {
+  position: relative;
+  z-index: 10;
+  width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  filter: drop-shadow(0 0 40px rgba(0,229,255,0.25));
+  animation: shellIn 0.8s cubic-bezier(.22,1,.36,1) both;
+}
+ 
+@keyframes shellIn {
+  from { opacity: 0; transform: translateY(30px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+ 
+/* ── HEADER ── */
+.header {
+  background: linear-gradient(135deg, #001a33 0%, #003366 100%);
+  border: 1px solid var(--glass-border);
+  border-bottom: none;
+  border-radius: 20px 20px 0 0;
+  padding: 18px 20px 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  overflow: hidden;
+}
+ 
+.header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(0,229,255,0.07), transparent);
+  animation: scanLine 3s linear infinite;
+}
+ 
+@keyframes scanLine {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(100%); }
+}
+ 
+.avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+ 
+.avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2px solid var(--cyan);
+  background: linear-gradient(135deg, #001a33, #0057ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  animation: float 4s ease-in-out infinite;
+  box-shadow: 0 0 20px rgba(0,229,255,0.5), inset 0 0 10px rgba(0,229,255,0.1);
+}
+ 
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-5px); }
+}
+ 
+.pulse-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid var(--cyan);
+  animation: pulseRing 2s ease-out infinite;
+}
+ 
+@keyframes pulseRing {
+  0%   { opacity: 0.7; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
+ 
+.header-info { flex: 1; }
+ 
+.header-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--cyan);
+  letter-spacing: 3px;
+  text-shadow: 0 0 20px rgba(0,229,255,0.8);
+}
+ 
+.header-sub {
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 1.5px;
+  margin-top: 2px;
+  text-transform: uppercase;
+}
+ 
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #00ff88;
+  box-shadow: 0 0 8px #00ff88;
+  animation: blink 2s infinite;
+  flex-shrink: 0;
+}
+ 
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+ 
+/* ── QUICK ACTIONS ── */
+.actions {
+  background: rgba(0,13,26,0.9);
+  border-left: 1px solid var(--glass-border);
+  border-right: 1px solid var(--glass-border);
+  padding: 10px 14px;
+  display: flex;
+  gap: 8px;
+}
+ 
+.action-btn {
+  flex: 1;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  color: var(--cyan);
+  padding: 8px 4px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 10px;
+  font-family: 'Exo 2', sans-serif;
+  letter-spacing: 0.5px;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  position: relative;
+  overflow: hidden;
+}
+ 
+.action-btn .icon { font-size: 16px; }
+.action-btn .label { font-size: 9px; text-transform: uppercase; opacity: 0.8; }
+ 
+.action-btn:hover {
+  background: rgba(0,229,255,0.15);
+  border-color: var(--cyan);
+  box-shadow: 0 0 15px rgba(0,229,255,0.2);
+  transform: translateY(-2px);
+}
+ 
+.action-btn:active { transform: scale(0.96); }
+ 
+/* ── CHAT AREA ── */
+.chat-area {
+  background: rgba(0,8,20,0.95);
+  border-left: 1px solid var(--glass-border);
+  border-right: 1px solid var(--glass-border);
+  height: 300px;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--glass-border) transparent;
+}
+ 
+.chat-area::-webkit-scrollbar { width: 3px; }
+.chat-area::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 2px; }
+ 
+/* ── MESSAGES ── */
+.msg {
+  display: flex;
+  gap: 8px;
+  animation: msgIn 0.35s cubic-bezier(.22,1,.36,1) both;
+}
+ 
+@keyframes msgIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+ 
+.msg.user { flex-direction: row-reverse; }
+ 
+.msg-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+ 
+.msg.bot .msg-avatar {
+  background: linear-gradient(135deg, #001a33, #0057ff);
+  border: 1px solid var(--cyan);
+  box-shadow: 0 0 8px rgba(0,229,255,0.3);
+}
+ 
+.msg.user .msg-avatar {
+  background: linear-gradient(135deg, #003366, #0057ff);
+  border: 1px solid rgba(0,87,255,0.5);
+}
+ 
+.bubble {
+  max-width: 78%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  position: relative;
+}
+ 
+.msg.bot .bubble {
+  background: rgba(0,229,255,0.07);
+  border: 1px solid rgba(0,229,255,0.15);
+  color: #c8f0ff;
+  border-radius: 4px 14px 14px 14px;
+}
+ 
+.msg.user .bubble {
+  background: linear-gradient(135deg, #003d8a, #0057ff);
+  border: 1px solid rgba(0,87,255,0.4);
+  color: white;
+  border-radius: 14px 4px 14px 14px;
+  text-align: right;
+}
+ 
+.typing-dots {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  padding: 4px 0;
+}
+ 
+.typing-dots span {
+  width: 6px;
+  height: 6px;
+  background: var(--cyan);
+  border-radius: 50%;
+  animation: typingDot 1.2s infinite;
+}
+ 
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+ 
+@keyframes typingDot {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40%            { transform: scale(1);   opacity: 1; }
+}
+ 
+/* ── INPUT AREA ── */
+.input-area {
+  background: rgba(0,10,24,0.97);
+  border: 1px solid var(--glass-border);
+  border-top: none;
+  border-radius: 0 0 20px 20px;
+  padding: 12px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+ 
+.input-area input {
+  flex: 1;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  color: white;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 13px;
+  outline: none;
+  transition: all 0.2s;
+}
+ 
+.input-area input::placeholder { color: var(--text-dim); }
+ 
+.input-area input:focus {
+  border-color: var(--cyan);
+  background: rgba(0,229,255,0.08);
+  box-shadow: 0 0 15px rgba(0,229,255,0.1);
+}
+ 
+.send-btn {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #0057ff, #00c6ff);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-size: 17px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 15px rgba(0,87,255,0.4);
+}
+ 
+.send-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 25px rgba(0,229,255,0.5);
+}
+ 
+.send-btn:active { transform: scale(0.95); }
+ 
+/* ── VOICE BTN ── */
+.voice-btn {
+  width: 40px;
+  height: 40px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  color: var(--cyan);
+  font-size: 17px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+ 
+.voice-btn:hover {
+  background: rgba(0,229,255,0.12);
+  border-color: var(--cyan);
+}
+ 
+.voice-btn.active {
+  background: rgba(0,229,255,0.2);
+  border-color: var(--cyan);
+  box-shadow: 0 0 15px rgba(0,229,255,0.4);
+  animation: voicePulse 0.8s infinite;
+}
+ 
+@keyframes voicePulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(0,229,255,0.3); }
+  50%       { box-shadow: 0 0 25px rgba(0,229,255,0.7); }
+}
+ 
+/* ── SLIDE MODAL ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,5,15,0.88);
+  z-index: 100;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(6px);
+  animation: fadeIn 0.2s ease;
+}
+ 
+.modal-overlay.show { display: flex; }
+ 
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+ 
+.modal {
+  background: linear-gradient(145deg, #001228, #00193d);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  width: 88%;
+  max-width: 440px;
+  padding: 28px 24px 20px;
+  position: relative;
+  box-shadow: 0 0 60px rgba(0,229,255,0.15);
+  animation: modalIn 0.35s cubic-bezier(.22,1,.36,1);
+}
+ 
+@keyframes modalIn {
+  from { transform: scale(0.9) translateY(20px); opacity: 0; }
+  to   { transform: scale(1) translateY(0); opacity: 1; }
+}
+ 
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+ 
+.modal-close:hover { background: rgba(255,0,80,0.2); border-color: rgba(255,0,80,0.5); }
+ 
+.modal-tag {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--cyan);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  font-family: 'Orbitron', monospace;
+}
+ 
+.modal-number {
+  font-family: 'Orbitron', monospace;
+  font-size: 52px;
+  font-weight: 900;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(0,229,255,0.3);
+  line-height: 1;
+  margin-bottom: -8px;
+  user-select: none;
+}
+ 
+.modal-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 16px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 10px;
+}
+ 
+.modal-body {
+  color: rgba(200,240,255,0.8);
+  font-size: 13px;
+  line-height: 1.7;
+  min-height: 60px;
+}
+ 
+.modal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+ 
+.nav-btn {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  color: var(--cyan);
+  padding: 8px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: 'Exo 2', sans-serif;
+  font-size: 12px;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+ 
+.nav-btn:hover { background: rgba(0,229,255,0.12); border-color: var(--cyan); }
+.nav-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+ 
+.slide-indicators {
+  display: flex;
+  gap: 6px;
+}
+ 
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(0,229,255,0.25);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+ 
+.dot.active {
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
+  width: 18px;
+  border-radius: 3px;
+}
+ 
+/* ── SUGGESTION CHIPS ── */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 14px 10px;
+  background: rgba(0,8,20,0.95);
+  border-left: 1px solid var(--glass-border);
+  border-right: 1px solid var(--glass-border);
+}
+ 
+.chip {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  color: var(--text-dim);
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Exo 2', sans-serif;
+}
+ 
+.chip:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: rgba(0,229,255,0.08);
+}
+</style>
+</head>
+<body>
+ 
+<canvas id="bg"></canvas>
+<div class="grid-overlay"></div>
+ 
+<div class="shell">
+ 
+  <!-- HEADER -->
+  <div class="header">
+    <div class="avatar-wrap">
+      <div class="avatar"><img src="Copilot_20260406_113615.png" alt="EVE IA" style="width:100%; height:100%; border-radius:50%; object-fit:cover;"></div>
+      <div class="pulse-ring"></div>
+    </div>
+    <div class="header-info">
+      <div class="header-title">EVE IA</div>
+      <div class="header-sub">Práctica Docente IV · Asistente</div>
+    </div>
+    <div class="status-dot"></div>
+  </div>
+ 
+  <!-- QUICK ACTIONS -->
+  <div class="actions">
+    <button class="action-btn" onclick="slide('unidades')">
+      <span class="icon">📚</span>
+      <span class="label">Unidades</span>
+    </button>
+    <button class="action-btn" onclick="slide('cronograma')">
+      <span class="icon">📅</span>
+      <span class="label">Cronograma</span>
+    </button>
+    <button class="action-btn" onclick="slide('metodologia')">
+      <span class="icon">🧠</span>
+      <span class="label">Metodología</span>
+    </button>
+    <button class="action-btn" onclick="slide('evaluacion')">
+      <span class="icon">📊</span>
+      <span class="label">Evaluación</span>
+    </button>
+  </div>
+ 
+  <!-- CHAT AREA -->
+  <div id="chat" class="chat-area"></div>
+ 
+  <!-- CHIPS -->
+  <div class="chips" id="chips">
+    <span class="chip" onclick="quickSend('¿Cuáles son los objetivos?')">Objetivos</span>
+    <span class="chip" onclick="quickSend('¿Cómo es la evaluación?')">Evaluación</span>
+    <span class="chip" onclick="quickSend('Contame sobre las unidades')">Unidades</span>
+    <span class="chip" onclick="quickSend('¿Cuál es el cronograma?')">Cronograma</span>
+  </div>
+ 
+  <!-- INPUT -->
+  <div class="input-area">
+    <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()" title="Escuchar respuesta">🔊</button>
+    <input id="input" placeholder="Preguntame sobre la materia..." onkeydown="if(event.key==='Enter') enviar()">
+    <button class="send-btn" onclick="enviar()">➤</button>
+  </div>
+ 
+</div>
+ 
+<!-- SLIDE MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <button class="modal-close" onclick="cerrar()">✕</button>
+    <div class="modal-tag" id="modalTag">Sección</div>
+    <div class="modal-number" id="modalNum">01</div>
+    <div class="modal-title" id="modalTitle">Título</div>
+    <div class="modal-body" id="modalBody">Contenido</div>
+    <div class="modal-nav">
+      <button class="nav-btn" id="prevBtn" onclick="prev()">← Anterior</button>
+      <div class="slide-indicators" id="dots"></div>
+      <button class="nav-btn" id="nextBtn" onclick="next()">Siguiente →</button>
+    </div>
+  </div>
+</div>
+ 
+<script>
+/* ── BACKGROUND CANVAS ── */
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+ 
+const particles = Array.from({length: 80}, () => ({
+  x: Math.random() * canvas.width,
+  y: Math.random() * canvas.height,
+  r: Math.random() * 1.5 + 0.3,
+  dx: (Math.random() - 0.5) * 0.4,
+  dy: (Math.random() - 0.5) * 0.4,
+  alpha: Math.random() * 0.5 + 0.2,
+}));
+ 
+function drawBg() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(0,229,255,${p.alpha})`;
+    ctx.fill();
+    p.x += p.dx; p.y += p.dy;
+    if (p.x < 0 || p.x > canvas.width) p.dx *= -1;
+    if (p.y < 0 || p.y > canvas.height) p.dy *= -1;
+  });
+ 
+  // Connection lines
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < 90) {
+        ctx.beginPath();
+        ctx.strokeStyle = `rgba(0,229,255,${0.06 * (1 - dist/90)})`;
+        ctx.lineWidth = 0.5;
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.stroke();
+      }
+    }
+  }
+  requestAnimationFrame(drawBg);
+}
+drawBg();
+ 
+/* ── KNOWLEDGE BASE ── */
+const base = {
+  hola: "¡Hola! 👋 Soy EVE, tu asistente para Práctica Docente IV. ¿En qué puedo ayudarte?",
+  gracias: "💙 ¡Con gusto! Estoy aquí cuando me necesites.",
+  unidades: "📚 La materia tiene 4 unidades:\n• Unidad I: Identidad docente\n• Unidad II: Inserción institucional\n• Unidad III: Innovación pedagógica\n• Unidad IV: Reflexión y cierre",
+  metodologia: "🧠 La metodología integra práctica reflexiva, trabajo en escuelas, colaboración entre pares y uso de TIC en el aula.",
+  evaluacion: "📊 La evaluación es continua e incluye:\n• Prácticas áulicas\n• Portafolio docente\n• Trabajo final integrador",
+  cronograma: "📅 Distribución anual:\n• Marzo-Abril → Unidad I\n• Mayo-Septiembre → Unidad II\n• Octubre → Unidad III\n• Noviembre → Unidad IV",
+  objetivos: "🎯 Objetivo principal: formar docentes capaces de diseñar, implementar y evaluar propuestas pedagógicas innovadoras con uso significativo de tecnología.",
+  practica: "🏫 La Práctica Docente IV es el tramo final de tu formación. Te insertás en escuelas reales y ponés en juego todo lo aprendido.",
+};
+ 
+function responder(m) {
+  const t = m.toLowerCase();
+  if (t.match(/hola|buenas|buenos|hi/)) return base.hola;
+  if (t.match(/gracia/)) return base.gracias;
+  if (t.match(/unidad/)) return base.unidades;
+  if (t.match(/metod/)) return base.metodologia;
+  if (t.match(/evalu/)) return base.evaluacion;
+  if (t.match(/cronograma|cuando|fecha/)) return base.cronograma;
+  if (t.match(/objetivo|para qu/)) return base.objetivos;
+  if (t.match(/practica|materia|trato/)) return base.practica;
+  return "💙 Podés preguntarme sobre las unidades, cronograma, metodología, evaluación u objetivos de la materia.";
+}
+ 
+/* ── VOICE ── */
+let voiceEnabled = true;
+function toggleVoice() {
+  voiceEnabled = !voiceEnabled;
+  const btn = document.getElementById('voiceBtn');
+  btn.textContent = voiceEnabled ? '🔊' : '🔇';
+  btn.classList.toggle('active', voiceEnabled);
+}
+ 
+function hablar(t) {
+  if (!voiceEnabled) return;
+  speechSynthesis.cancel();
+  const v = new SpeechSynthesisUtterance(t.replace(/[📚📅🧠📊🎯🏫💙👋•\n]/g, ' '));
+  v.lang = 'es-ES';
+  v.pitch = 1.3;
+  v.rate = 0.95;
+  speechSynthesis.speak(v);
+}
+ 
+/* ── CHAT ── */
+const chat = document.getElementById('chat');
+ 
+function addMsg(text, type) {
+  const wrap = document.createElement('div');
+  wrap.className = `msg ${type}`;
+ 
+  const av = document.createElement('div');
+  av.className = 'msg-avatar';
+  av.textContent = type === 'bot' ? '🤖' : '👤';
+ 
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.style.whiteSpace = 'pre-line';
+  bubble.textContent = text;
+ 
+  wrap.appendChild(av);
+  wrap.appendChild(bubble);
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+  return wrap;
+}
+ 
+function addTyping() {
+  const wrap = document.createElement('div');
+  wrap.className = 'msg bot';
+  wrap.id = 'typing';
+ 
+  const av = document.createElement('div');
+  av.className = 'msg-avatar';
+  av.textContent = '🤖';
+ 
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+ 
+  wrap.appendChild(av);
+  wrap.appendChild(bubble);
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+}
+ 
+function enviar() {
+  const input = document.getElementById('input');
+  const text = input.value.trim();
+  if (!text) return;
+ 
+  addMsg(text, 'user');
+  input.value = '';
+  addTyping();
+ 
+  setTimeout(() => {
+    const t = document.getElementById('typing');
+    if (t) t.remove();
+    const resp = responder(text);
+    addMsg(resp, 'bot');
+    hablar(resp);
+  }, 700 + Math.random() * 400);
+}
+ 
+function quickSend(text) {
+  document.getElementById('input').value = text;
+  enviar();
+}
+ 
+/* ── SLIDES DATA ── */
+const slides = {
+  unidades: [
+    { title: "Identidad Docente", body: "Reflexión sobre el rol docente, valores pedagógicos y construcción de la identidad profesional en el aula." },
+    { title: "Inserción Institucional", body: "Práctica real en escuelas. Observación, participación y diseño de propuestas adaptadas al contexto institucional." },
+    { title: "Innovación Pedagógica", body: "Diseño de clases con TIC, estrategias activas y enfoque en el aprendizaje significativo." },
+    { title: "Reflexión y Cierre", body: "Análisis crítico de las prácticas realizadas. Elaboración del portafolio y trabajo final integrador." },
+  ],
+  cronograma: [
+    { title: "Marzo – Abril", body: "Unidad I: Identidad docente. Seminarios teóricos, lecturas, debates y primeros acercamientos a la institución escolar." },
+    { title: "Mayo – Septiembre", body: "Unidad II: Inserción en escuelas. El tramo más extenso: observación, planificación y práctica áulica supervisada." },
+    { title: "Octubre", body: "Unidad III: Innovación pedagógica. Diseño de propuestas con TIC e implementación de estrategias innovadoras." },
+    { title: "Noviembre", body: "Unidad IV: Cierre y reflexión. Presentación del portafolio docente y trabajo final integrador." },
+  ],
+  metodologia: [
+    { title: "Práctica Reflexiva", body: "Análisis constante de las propias prácticas para mejorar la intervención pedagógica y el desarrollo profesional." },
+    { title: "Trabajo en Escuelas", body: "Inserción real en instituciones educativas para vivir el rol docente en contextos auténticos y diversos." },
+    { title: "Aprendizaje Colaborativo", body: "Trabajo en equipo, intercambio de experiencias y construcción colectiva del conocimiento pedagógico." },
+    { title: "Integración de TIC", body: "Uso significativo de tecnologías digitales como herramientas para enriquecer los procesos de enseñanza-aprendizaje." },
+  ],
+  evaluacion: [
+    { title: "Evaluación Continua", body: "Seguimiento permanente del proceso de aprendizaje a través de observaciones, devoluciones y reflexiones parciales." },
+    { title: "Prácticas Áulicas", body: "Clases planificadas e implementadas en escuelas, evaluadas según criterios pedagógicos y didácticos acordados." },
+    { title: "Portafolio Docente", body: "Colección organizada de evidencias del proceso formativo: planificaciones, reflexiones, recursos y autoevaluaciones." },
+    { title: "Trabajo Final Integrador", body: "Producción académica que articula teoría y práctica, reflexionando sobre la experiencia docente global del año." },
+  ],
+};
+ 
+const tagLabels = {
+  unidades: 'Unidades del Programa',
+  cronograma: 'Cronograma Anual',
+  metodologia: 'Metodología de Trabajo',
+  evaluacion: 'Sistema de Evaluación',
+};
+ 
+let currentSlides = [], currentIdx = 0, currentTag = '';
+ 
+function slide(type) {
+  currentSlides = slides[type];
+  currentTag = tagLabels[type];
+  currentIdx = 0;
+  renderSlide();
+  document.getElementById('modal').classList.add('show');
+}
+ 
+function renderSlide() {
+  const s = currentSlides[currentIdx];
+  document.getElementById('modalTag').textContent = currentTag;
+  document.getElementById('modalNum').textContent = String(currentIdx + 1).padStart(2, '0');
+  document.getElementById('modalTitle').textContent = s.title;
+  document.getElementById('modalBody').textContent = s.body;
+  document.getElementById('prevBtn').disabled = currentIdx === 0;
+  document.getElementById('nextBtn').disabled = currentIdx === currentSlides.length - 1;
+ 
+  const dots = document.getElementById('dots');
+  dots.innerHTML = '';
+  currentSlides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === currentIdx ? ' active' : '');
+    d.onclick = () => { currentIdx = i; renderSlide(); };
+    dots.appendChild(d);
+  });
+}
+ 
+function next() { if (currentIdx < currentSlides.length - 1) { currentIdx++; renderSlide(); } }
+function prev() { if (currentIdx > 0) { currentIdx--; renderSlide(); } }
+function cerrar() { document.getElementById('modal').classList.remove('show'); }
+ 
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal')) cerrar();
+});
+ 
+/* ── INIT ── */
+window.onload = () => {
+  setTimeout(() => addMsg('¡Hola! Soy EVE 💙 Tu asistente para Práctica Docente IV. Podés preguntarme sobre la materia o usar los botones para explorar el programa.', 'bot'), 400);
+};
+ 
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+</script>
+ 
+</body>
+</html>
